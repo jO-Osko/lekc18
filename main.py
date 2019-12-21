@@ -1,3 +1,5 @@
+from random import randint, seed
+
 from flask import Flask, render_template, request, \
     make_response, redirect, url_for
 from models import User, db
@@ -11,7 +13,7 @@ app = Flask(__name__)
 def login_get():
     return render_template("login.html")
 
-@app.route("/login", methods=["POST"])
+@app.route("/login_post", methods=["POST"])
 def login_post():
     name = request.form.get("name")
     email = request.form.get("email")
@@ -33,10 +35,55 @@ def login_post():
 def index():
     email = request.cookies.get("email")
     user = db.query(User).filter_by(email=email).first()
-    if user is not None:
-        print(user.email, user.name)
-    return "<h1>Glavna stran</h1>"
+    if user is None:
+        response = make_response(
+            redirect(url_for("login_get"))
+        )
+        return response
+    print(user.email, user.name)
+    return render_template("ugibanje.html")
 
+
+@app.route("/", methods=["POST"])
+def index_post():
+    email = request.cookies.get("email")
+    user = db.query(User).filter_by(email=email).first()
+    if user is None:
+        response = make_response(
+            redirect(url_for("login_get"))
+        )
+        return response
+    vpisana = int(request.form.get("ugibanje"))
+    uganil = False
+    if vpisana > user.secret_number:
+        message = "Ugibana številka je prevelika"
+    elif vpisana == user.secret_number:
+        uganil = True
+        message = "Ugibana številka je pravilna"
+    else:
+        message = "Ugibana številka je premajhna"
+    return render_template("rezultat_ugibanja.html",
+                           message=message, uganil=uganil)
+
+@app.route("/reset")
+def reset():
+    email = request.cookies.get("email")
+    user = db.query(User).filter_by(email=email).first()
+    if user is None:
+        response = make_response(
+            redirect(url_for("login_get"))
+        )
+        return response
+
+    user.secret_number = randint(0, 100)
+    print(user.secret_number)
+    db.add(user)
+    db.commit()
+
+    response = make_response(
+        redirect(url_for("index"))
+    )
+    return response
 
 if __name__ == '__main__':
     app.run()
