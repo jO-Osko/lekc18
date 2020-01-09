@@ -96,5 +96,74 @@ def reset():
     )
     return response
 
+
+@app.route("/profile/")
+def profile_view():
+    token = request.cookies.get("token")
+    user = db.query(User).filter_by(token=token).first()
+    if user is None:
+        response = make_response(
+            redirect(url_for("login_get"))
+        )
+        return response
+
+    return render_template("profile.html", user=user)
+
+@app.route("/profile/edit", methods=["GET"])
+def profile_edit_get():
+    token = request.cookies.get("token")
+    user = db.query(User).filter_by(token=token).first()
+    if user is None:
+        response = make_response(
+            redirect(url_for("login_get"))
+        )
+        return response
+
+    return render_template("edit.html", user=user)
+
+@app.route("/profile/edit", methods=["POST"])
+def profile_edit_post():
+    token = request.cookies.get("token")
+    user = db.query(User).filter_by(token=token).first()
+    if user is None:
+        response = make_response(
+            redirect(url_for("login_get"))
+        )
+        return response
+
+    # Popravimo
+    user.email = request.form.get("email")
+    user.name = request.form.get("name")
+    # db.delete(user)
+    # Shranimo v bazo
+    db.add(user)
+    db.commit()
+
+    return render_template("edit.html", user=user)
+
+@app.route("/profile/delete", methods=["POST"])
+def profile_delete_post():
+    token = request.cookies.get("token")
+    user = db.query(User).filter_by(token=token).first()
+    if user is None:
+        response = make_response(
+            redirect(url_for("login_get"))
+        )
+        return response
+
+    db.delete(user)
+    db.commit()
+
+    return make_response(
+            redirect(url_for("index"))
+        )
+
+@app.route("/list", methods=["GET"])
+def list_users():
+    users = db.query(User).all()
+
+    return render_template("list_users.html",
+                    users=users)
+
 if __name__ == '__main__':
     app.run()
