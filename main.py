@@ -3,11 +3,12 @@ import hashlib
 
 from flask import Flask, render_template, request, \
     make_response, redirect, url_for
-from models import User, db
+from models import User, db, init_data
 
 import uuid
 
 db.create_all()
+# init_data()
 
 app = Flask(__name__)
 
@@ -164,6 +165,14 @@ def list_users():
 
     return render_template("list_users.html",
                     users=users)
+
+@app.route("/profiles/<user_uid>")
+def view_user(user_uid):
+    user = db.query(User).\
+        filter_by(uid=user_uid).first()
+
+    return render_template("profile_other.html",
+                           user=user)
 
 if __name__ == '__main__':
     app.run()
